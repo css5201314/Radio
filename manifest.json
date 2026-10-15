@@ -1,0 +1,19 @@
+{
+  "name": "Aether 随身电台",
+  "short_name": "随身电台",
+  "description": "极美磨砂玻璃质感 · 纯净自定义手机电台",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080911",
+  "theme_color": "#0a0c14",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23121524'/><circle cx='50' cy='50' r='32' fill='%23ff6b4a'/><circle cx='50' cy='50' r='12' fill='%23ffffff'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
