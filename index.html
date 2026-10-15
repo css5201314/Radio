@@ -901,7 +901,7 @@
       <div class="brand-wrap">
         <span class="live-dot idle" id="liveDot"></span>
         <span class="brand-title">Aether FM</span>
-        <span class="badge-capsule" id="modeBadge">CUSTOM PURE</span>
+        <span class="badge-capsule" id="modeBadge">LIVE FM · 12 STATIONS</span>
       </div>
       <div class="top-actions">
         <button class="glass-btn-sm" id="sleepBtn" title="睡眠定时">
@@ -1031,12 +1031,131 @@
 
 
   <script>
-    // Pure Empty Shell by Default (No pre-bundled stations)
+    // 12 Built-in Qingting FM Live Stations
+    const PRESET_STATIONS = [
+      {
+        id: "st-20500149",
+        freq: 88.5,
+        name: "两广之声音乐台",
+        genre: "网络电台 · 流行音乐",
+        streamUrl: "https://lhttp.qingting.fm/live/20500149/64k.mp3",
+        logo: "https://pic.qtfm.cn/2022/0619/20220619063631.jpeg",
+        icon: "🎵"
+      },
+      {
+        id: "st-4804",
+        freq: 90.3,
+        name: "怀集音乐之声",
+        genre: "网络电台 · 地方音乐",
+        streamUrl: "https://lhttp.qingting.fm/live/4804/64k.mp3",
+        logo: "https://pic.qtfm.cn/2020/1016/20201016121634.png",
+        icon: "📻"
+      },
+      {
+        id: "st-4915",
+        freq: 91.8,
+        name: "清晨音乐台",
+        genre: "网络电台 · 温暖早晨",
+        streamUrl: "https://lhttp.qingting.fm/live/4915/64k.mp3",
+        logo: "https://pic.qtfm.cn/2022/0211/20220211102019.jpeg",
+        icon: "🌅"
+      },
+      {
+        id: "st-20500172",
+        freq: 93.6,
+        name: "国际新闻",
+        genre: "网络电台 · 全球资讯",
+        streamUrl: "https://lhttp.qingting.fm/live/20500172/64k.mp3",
+        logo: "https://pic.qtfm.cn/sso/48/1678171152584_a6BwhQSVz.png",
+        icon: "🌐"
+      },
+      {
+        id: "st-15318569",
+        freq: 95.2,
+        name: "AsiaFM 亚洲粤语台",
+        genre: "网络电台 · 经典粤语金曲",
+        streamUrl: "https://lhttp.qingting.fm/live/15318569/64k.mp3",
+        logo: "https://pic.qtfm.cn/2022/1019/20221019042732.jpeg",
+        icon: "🎙️"
+      },
+      {
+        id: "st-20500150",
+        freq: 97.1,
+        name: "顺德音乐之声",
+        genre: "网络电台 · 慢调生活",
+        streamUrl: "https://lhttp.qingting.fm/live/20500150/64k.mp3",
+        logo: "https://pic.qtfm.cn/2022/0616/20220616044011.jpeg",
+        icon: "🎼"
+      },
+      {
+        id: "st-5022107",
+        freq: 99.0,
+        name: "动听音乐台",
+        genre: "网络电台 · 华语流行热歌",
+        streamUrl: "https://lhttp.qingting.fm/live/5022107/64k.mp3",
+        logo: "https://pic.qtfm.cn/2021/0411/20210411040015.jpeg",
+        icon: "🎶"
+      },
+      {
+        id: "st-15318341",
+        freq: 100.8,
+        name: "AsiaFM HD音乐台",
+        genre: "网络电台 · 高清无损音乐",
+        streamUrl: "https://lhttp.qingting.fm/live/15318341/64k.mp3",
+        logo: "https://pic.qtfm.cn/2022/0712/20220712122303.jpeg",
+        icon: "🎧"
+      },
+      {
+        id: "st-20210755",
+        freq: 102.5,
+        name: "星河音乐",
+        genre: "网络电台 · 治愈夜话伴眠",
+        streamUrl: "https://lhttp.qingting.fm/live/20210755/64k.mp3",
+        logo: "https://pic.qtfm.cn/2017/0906/20170906155546583.jpg",
+        icon: "🌌"
+      },
+      {
+        id: "st-5021912",
+        freq: 104.2,
+        name: "AsiaFM 亚洲经典台",
+        genre: "网络电台 · 流金岁月老歌",
+        streamUrl: "https://lhttp.qingting.fm/live/5021912/64k.mp3",
+        logo: "https://pic.qtfm.cn/2022/0712/20220712122112.jpeg",
+        icon: "📻"
+      },
+      {
+        id: "st-20500169",
+        freq: 105.8,
+        name: "新闻听天下",
+        genre: "网络电台 · 深度国际时事",
+        streamUrl: "https://lhttp.qingting.fm/live/20500169/64k.mp3",
+        logo: "https://pic.qtfm.cn/2023/0209/20230209061451.png",
+        icon: "📰"
+      },
+      {
+        id: "st-20071",
+        freq: 107.5,
+        name: "AsiaFM 亚洲天空台",
+        genre: "网络电台 · 流行轻音乐",
+        streamUrl: "https://lhttp.qingting.fm/live/20071/64k.mp3",
+        logo: "https://pic.qtfm.cn/2022/0712/20220712122151.jpeg",
+        icon: "☁️"
+      }
+    ];
+
     let stations = [];
     try {
-      const saved = JSON.parse(localStorage.getItem("aether_pure_custom_stations") || "[]");
-      if (Array.isArray(saved)) stations = saved;
-    } catch (e) {}
+      const saved = JSON.parse(localStorage.getItem("aether_pure_custom_stations"));
+      if (Array.isArray(saved) && saved.length > 0 && localStorage.getItem("aether_preset_qtfm_v2") === "true") {
+        stations = saved;
+      } else {
+        stations = [...PRESET_STATIONS];
+        localStorage.setItem("aether_pure_custom_stations", JSON.stringify(stations));
+        localStorage.setItem("aether_preset_qtfm_v2", "true");
+      }
+    } catch (e) {
+      stations = [...PRESET_STATIONS];
+    }
 
     let favorites = new Set();
     try {
@@ -1237,7 +1356,12 @@
       freqDisplay.textContent = st.freq.toFixed(1);
       stationTitle.textContent = st.name;
       stationGenre.textContent = st.genre || "自定义广播流";
-      vinylIcon.textContent = st.icon || "📻";
+      if (st.logo) {
+        const safeLogo = st.logo.replace(/^http:\/\//i, 'https://');
+        vinylIcon.innerHTML = `<img src="${safeLogo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.outerHTML='${st.icon || '📻'}'" />`;
+      } else {
+        vinylIcon.textContent = st.icon || "📻";
+      }
 
       const pct = Math.max(4, Math.min(96, ((st.freq - 88) / 20) * 92 + 4));
       tunerNeedle.style.left = `${pct}%`;
@@ -1289,7 +1413,11 @@
         return;
       }
 
-      audioEl.src = st.streamUrl;
+      let streamUrl = st.streamUrl;
+      if (window.location.protocol === "https:" && streamUrl.startsWith("http://")) {
+        streamUrl = streamUrl.replace(/^http:\/\//i, "https://");
+      }
+      audioEl.src = streamUrl;
       audioEl.load();
 
       try {
@@ -1361,10 +1489,17 @@
       stations.forEach((st, idx) => {
         const card = document.createElement("div");
         card.className = `station-item ${idx === currentIndex ? "active" : ""}`;
+        const logoBadge = st.logo 
+          ? `<img src="${st.logo.replace(/^http:\/\//i, 'https://')}" style="width:20px;height:20px;border-radius:6px;object-fit:cover;vertical-align:middle;box-shadow:0 1px 4px rgba(0,0,0,0.3);" onerror="this.outerHTML='${st.icon || '📻'}'" />`
+          : `<span style="font-size:14px;">${st.icon || "📻"}</span>`;
+
         card.innerHTML = `
           <div class="st-top">
             <span class="st-freq">FM ${st.freq.toFixed(1)}</span>
-            <button class="delete-station-btn" title="删除该台" data-idx="${idx}">✕</button>
+            <div style="display:flex;align-items:center;gap:6px;">
+              ${logoBadge}
+              <button class="delete-station-btn" title="删除该台" data-idx="${idx}">✕</button>
+            </div>
           </div>
           <div class="st-title">${st.name}</div>
           <div class="st-sub">${st.genre || "网络广播"}</div>
