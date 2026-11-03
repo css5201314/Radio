@@ -8,276 +8,588 @@
   <meta name="apple-mobile-web-app-title" content="FM365网络收音机">
   <meta name="theme-color" content="#0d0f12">
   <title>FM365 网络收音机 Pro</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --safe-top: env(safe-area-inset-top, 20px);
-      --safe-bottom: env(safe-area-inset-bottom, 20px);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --bg-main: #0a0d14;
+      --card-bg: rgba(22, 27, 38, 0.75);
+      --accent-blue: #2563eb;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
     body {
-      background-color: #0b0d11;
+      background-color: var(--bg-main);
       color: #f3f4f6;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
-      padding-top: var(--safe-top);
-      padding-bottom: calc(var(--safe-bottom) + 90px);
+      padding-top: calc(var(--safe-top) + 95px);
+      padding-bottom: calc(var(--safe-bottom) + 85px);
+      min-height: 100vh;
     }
-    .glass-nav {
-      background: rgba(18, 22, 30, 0.82);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+    /* 頂部固定欄 */
+    .app-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      background: rgba(14, 18, 26, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: var(--safe-top);
     }
-    .glass-card {
-      background: rgba(24, 29, 40, 0.65);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+    .header-content {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
     }
-    .glass-card.active {
-      background: rgba(37, 99, 235, 0.18);
-      border-color: rgba(96, 165, 250, 0.5);
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .glass-player {
-      background: rgba(15, 19, 28, 0.92);
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
-      border-top: 1px solid rgba(255, 255, 255, 0.12);
-      padding-bottom: max(var(--safe-bottom), 12px);
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      color: #fff;
     }
-    .modal-sheet {
-      background: #0f131c;
-      border-top: 1px solid rgba(255, 255, 255, 0.12);
-      padding-bottom: max(var(--safe-bottom), 24px);
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    @keyframes disc-spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(37, 99, 235, 0.25);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
     }
-    .spin {
-      animation: disc-spin 18s linear infinite;
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .spin-paused {
-      animation-play-state: paused;
+    .btn-icon-head {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
     }
-    .scrollbar-none::-webkit-scrollbar {
-      display: none;
-    }
-    .scrollbar-none {
-      -ms-overflow-style: none;
+    /* 分類導航滑動欄 */
+    .cat-bar {
+      display: flex;
+      gap: 8px;
+      padding: 6px 16px 12px 16px;
+      overflow-x: auto;
       scrollbar-width: none;
     }
-    .wave-bar {
-      display: inline-block;
-      width: 3px;
-      height: 16px;
-      margin: 0 1px;
-      border-radius: 2px;
-      background-color: #3b82f6;
-      animation: wave 1.2s ease-in-out infinite alternate;
+    .cat-bar::-webkit-scrollbar {
+      display: none;
     }
-    @keyframes wave {
-      0% { height: 4px; opacity: 0.4; }
+    .cat-pill {
+      flex-shrink: 0;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: rgba(255, 255, 255, 0.06);
+      color: #9ca3af;
+      transition: all 0.2s ease;
+    }
+    .cat-pill.active {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+    /* 電台卡片列表 */
+    .station-list {
+      padding: 8px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .station-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.2s ease;
+    }
+    .station-card:active {
+      transform: scale(0.985);
+    }
+    .station-card.active {
+      background: rgba(37, 99, 235, 0.16);
+      border-color: rgba(96, 165, 250, 0.45);
+    }
+    .card-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1;
+    }
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #60a5fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .station-card.active .card-icon {
+      background: #2563eb;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+    }
+    .card-meta {
+      min-width: 0;
+      flex: 1;
+    }
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .station-card.active .card-title {
+      color: #60a5fa;
+    }
+    .card-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #9ca3af;
+      flex-shrink: 0;
+    }
+    .card-sub {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .fav-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      color: #6b7280;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .fav-btn.is-fav {
+      color: #f43f5e;
+    }
+    /* 聲波條動效 */
+    .wave-box {
+      display: flex;
+      align-items: flex-end;
+      height: 18px;
+      gap: 2px;
+      padding: 0 6px;
+    }
+    .wave-bar {
+      width: 3px;
+      background: #3b82f6;
+      border-radius: 2px;
+      animation: bar-wave 1s ease-in-out infinite alternate;
+    }
+    @keyframes bar-wave {
+      0% { height: 4px; opacity: 0.3; }
       100% { height: 18px; opacity: 1; }
     }
     .wave-bar:nth-child(2) { animation-delay: 0.2s; }
     .wave-bar:nth-child(3) { animation-delay: 0.4s; }
-    .wave-bar:nth-child(4) { animation-delay: 0.1s; }
+
+    /* 底部迷你播放條 */
+    .mini-player {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 45;
+      background: rgba(15, 20, 30, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px 16px calc(var(--safe-bottom) + 10px) 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .mini-player.hidden-player {
+      transform: translateY(110%);
+    }
+    .mini-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1;
+    }
+    .mini-disc {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #60a5fa;
+      font-size: 18px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .mini-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      margin-left: 10px;
+    }
+    .mini-btn {
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 17px;
+      cursor: pointer;
+      padding: 6px;
+    }
+    .mini-play-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    /* 全螢幕黑膠彈窗 */
+    .full-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: #090c13;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding-top: var(--safe-top);
+      padding-bottom: calc(var(--safe-bottom) + 20px);
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .full-modal.modal-closed {
+      transform: translateY(100%);
+    }
+    .modal-head {
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+    }
+    .disc-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .vinyl {
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: #111;
+      border: 4px solid #1f2937;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(37, 99, 235, 0.25);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: spin 16s linear infinite;
+    }
+    .vinyl.paused {
+      animation-play-state: paused;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .vinyl-core {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #4338ca);
+      border: 3px solid rgba(255, 255, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 26px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    .modal-meta {
+      text-align: center;
+      margin-top: 24px;
+      max-width: 85%;
+    }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .modal-freq {
+      font-size: 13px;
+      color: #60a5fa;
+      margin-top: 4px;
+    }
+    .modal-status {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #9ca3af;
+    }
+    .modal-controls-box {
+      padding: 10px 24px 20px 24px;
+    }
+    .route-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 20px;
+    }
+    .route-btn {
+      background: none;
+      border: none;
+      color: #60a5fa;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .modal-btn-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      margin-bottom: 12px;
+    }
+    .modal-play-large {
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+      cursor: pointer;
+    }
+
+    /* 彈出提示 Toast */
+    .toast {
+      position: fixed;
+      top: calc(var(--safe-top) + 60px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99;
+      background: rgba(20, 24, 33, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 13px;
+      padding: 7px 18px;
+      border-radius: 9999px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .toast.show {
+      opacity: 1;
+    }
   </style>
 </head>
-<body class="min-h-screen">
+<body>
 
-  <!-- 顶部状态栏与标题 -->
-  <header class="fixed top-0 left-0 right-0 z-40 glass-nav" style="padding-top: var(--safe-top);">
-    <div class="flex items-center justify-between px-4 h-14">
-      <div class="flex items-center space-x-2.5">
-        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-          <i class="fa-solid fa-tower-broadcast text-white text-sm"></i>
+  <!-- 頂部標頭與分類導航 -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="brand-box">
+        <div class="brand-icon">
+          <i class="fa-solid fa-tower-broadcast"></i>
         </div>
-        <div>
-          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-            FM365 收音机
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30">Pro 极速版</span>
-          </h1>
+        <div class="brand-title">
+          FM365 收音机
+          <span class="badge">Pro 极速版</span>
         </div>
       </div>
-      <div class="flex items-center space-x-1">
-        <button id="addStationBtn" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 transition">
-          <i class="fa-solid fa-plus text-sm"></i>
+      <div class="header-actions">
+        <button id="addStationBtn" class="btn-icon-head" title="添加电台">
+          <i class="fa-solid fa-plus"></i>
         </button>
-        <button id="exportM3uBtn" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 transition" title="导出 M3U">
-          <i class="fa-solid fa-download text-sm"></i>
+        <button id="exportM3uBtn" class="btn-icon-head" title="导出 M3U">
+          <i class="fa-solid fa-download"></i>
         </button>
       </div>
     </div>
-
-    <!-- 分类滑动选择器 -->
-    <div class="flex space-x-2 px-4 pb-2.5 overflow-x-auto scrollbar-none text-xs" id="categoryBar">
-      <!-- 动态生成 -->
-    </div>
+    <!-- 分類水平滑動列 -->
+    <div class="cat-bar" id="categoryBar"></div>
   </header>
 
-  <!-- 顶栏占位符 -->
-  <div class="h-24"></div>
+  <!-- 電台列表容器 -->
+  <main class="station-list" id="stationList"></main>
 
-  <!-- 主体内容：电台列表 -->
-  <main class="px-4 py-2 space-y-2.5" id="stationList">
-    <!-- 动态生成电台卡片 -->
-  </main>
-
-  <!-- 底部常驻迷你播放条 (iOS 原生触觉) -->
-  <footer id="miniPlayer" class="fixed bottom-0 left-0 right-0 z-40 glass-player flex flex-col cursor-pointer transition-transform duration-300 transform translate-y-full">
-    <div class="px-4 pt-3 flex items-center justify-between">
-      <div class="flex items-center space-x-3 flex-1 min-w-0" id="miniPlayerInfo">
-        <div class="relative w-12 h-12 rounded-xl bg-gray-800 overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
-          <img id="miniCover" src="" class="w-full h-full object-cover hidden">
-          <i id="miniCoverIcon" class="fa-solid fa-radio text-blue-400 text-lg"></i>
-          <div id="miniWave" class="absolute inset-0 bg-black/40 flex items-center justify-center hidden">
-            <span class="wave-bar"></span>
-            <span class="wave-bar"></span>
-            <span class="wave-bar"></span>
-          </div>
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center space-x-1.5">
-            <h4 id="miniTitle" class="text-sm font-semibold truncate text-white">请选择电台</h4>
-            <span id="miniTag" class="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">国家台</span>
-          </div>
-          <p id="miniStatus" class="text-xs text-gray-400 truncate mt-0.5">准备就绪</p>
-        </div>
+  <!-- 底部 Mini 播放控制器 -->
+  <footer id="miniPlayer" class="mini-player hidden-player">
+    <div class="mini-info" id="miniPlayerInfo">
+      <div class="mini-disc">
+        <i class="fa-solid fa-radio" id="miniIcon"></i>
       </div>
-
-      <!-- 控制按键 -->
-      <div class="flex items-center space-x-3 ml-2 flex-shrink-0">
-        <button id="miniPrevBtn" class="text-gray-400 hover:text-white p-2 active:scale-90 transition">
-          <i class="fa-solid fa-backward-step text-base"></i>
-        </button>
-        <button id="miniPlayBtn" class="w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/40 active:scale-95 transition">
-          <i id="miniPlayIcon" class="fa-solid fa-play ml-0.5 text-base"></i>
-        </button>
-        <button id="miniNextBtn" class="text-gray-400 hover:text-white p-2 active:scale-90 transition">
-          <i class="fa-solid fa-forward-step text-base"></i>
-        </button>
+      <div style="min-width:0; flex:1;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <h4 id="miniTitle" style="font-size:14px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">请选择电台</h4>
+          <span id="miniTag" class="card-badge" style="background:rgba(37,99,235,0.25); color:#60a5fa;">国家台</span>
+        </div>
+        <p id="miniStatus" style="font-size:11px; color:#9ca3af; margin-top:2px;">就绪</p>
       </div>
+    </div>
+    <div class="mini-controls">
+      <button id="miniPrevBtn" class="mini-btn"><i class="fa-solid fa-backward-step"></i></button>
+      <button id="miniPlayBtn" class="mini-play-btn"><i id="miniPlayIcon" class="fa-solid fa-play" style="margin-left:2px;"></i></button>
+      <button id="miniNextBtn" class="mini-btn"><i class="fa-solid fa-forward-step"></i></button>
     </div>
   </footer>
 
-  <!-- 全屏沉浸黑胶播放模态框 (Full Modal Player) -->
-  <div id="fullPlayerModal" class="fixed inset-0 z-50 bg-[#0a0d14] flex flex-col justify-between transition-transform duration-300 transform translate-y-full" style="padding-top: var(--safe-top);">
-    <!-- 顶部返回栏 -->
-    <div class="px-4 h-14 flex items-center justify-between">
-      <button id="closeFullModalBtn" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 transition">
-        <i class="fa-solid fa-chevron-down text-lg"></i>
-      </button>
-      <div class="text-center">
-        <span class="text-[11px] text-gray-400 uppercase tracking-widest">LIVE BROADCAST</span>
-        <h3 id="modalStationGroup" class="text-xs font-semibold text-blue-400">全国重点电台</h3>
+  <!-- 全螢幕黑膠沉浸播放彈窗 -->
+  <div id="fullPlayerModal" class="full-modal modal-closed">
+    <div class="modal-head">
+      <button id="closeFullModalBtn" class="btn-icon-head"><i class="fa-solid fa-chevron-down"></i></button>
+      <div style="text-align:center;">
+        <div style="font-size:10px; color:#6b7280; letter-spacing:1px;">LIVE STREAMING</div>
+        <div id="modalStationGroup" style="font-size:12px; font-weight:600; color:#60a5fa;">国家台</div>
       </div>
-      <button id="copyStreamModalBtn" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 transition" title="复制直播流">
-        <i class="fa-solid fa-share-nodes text-base"></i>
-      </button>
+      <button id="copyStreamModalBtn" class="btn-icon-head" title="复制直播源"><i class="fa-solid fa-share-nodes"></i></button>
     </div>
 
-    <!-- 黑胶唱盘视觉区 -->
-    <div class="flex-1 flex flex-col items-center justify-center px-8 relative">
-      <div class="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full p-2 bg-gradient-to-tr from-gray-900 via-gray-800 to-black shadow-2xl shadow-blue-900/30 flex items-center justify-center border border-white/10">
-        <!-- 黑胶纹理 -->
-        <div id="vinylDisc" class="w-full h-full rounded-full bg-[#111] border-4 border-gray-900 shadow-inner flex items-center justify-center relative overflow-hidden spin spin-paused">
-          <div class="absolute inset-0 rounded-full opacity-30" style="background: repeating-radial-gradient(circle, #222 0, #222 2px, #0e0e0e 3px, #0e0e0e 4px);"></div>
-          <!-- 唱片中心封面 -->
-          <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-600 border-2 border-white/40 flex items-center justify-center shadow-lg relative z-10 overflow-hidden">
-            <i class="fa-solid fa-tower-cell text-white text-2xl"></i>
-          </div>
+    <div class="disc-container">
+      <div class="vinyl paused" id="vinylDisc">
+        <div class="vinyl-core">
+          <i class="fa-solid fa-tower-cell"></i>
         </div>
       </div>
-
-      <!-- 实时元数据信息 -->
-      <div class="text-center mt-8 w-full max-w-xs">
-        <h2 id="modalStationTitle" class="text-xl font-bold text-white tracking-wide truncate">中国之声</h2>
-        <p id="modalStationFreq" class="text-xs text-blue-400 font-mono mt-1">FM 106.1 MHz • 高清广播</p>
-        <p id="modalStreamStatus" class="text-xs text-gray-400 mt-2 px-3 py-1 bg-white/5 rounded-full inline-block border border-white/5">正在准备音频流...</p>
+      <div class="modal-meta">
+        <h2 id="modalStationTitle" class="modal-title">中国之声</h2>
+        <div id="modalStationFreq" class="modal-freq">FM 106.1 MHz</div>
+        <span id="modalStreamStatus" class="modal-status">正在连接音频源...</span>
       </div>
     </div>
 
-    <!-- 底部全功能播放控制器 -->
-    <div class="modal-sheet px-6 pt-4 pb-6">
-      <!-- 线路选择器 -->
-      <div class="flex items-center justify-between text-xs text-gray-400 mb-4 px-2">
-        <span class="flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="routeInfo">主线路 (高速源)</span>
-        </span>
-        <button id="switchRouteBtn" class="text-blue-400 hover:text-blue-300 font-medium">切换备用线路</button>
+    <div class="modal-controls-box">
+      <div class="route-row">
+        <span id="routeInfo"><i class="fa-solid fa-circle-nodes" style="color:#10b981; margin-right:5px;"></i> 主线路 (高速 CDN)</span>
+        <button id="switchRouteBtn" class="route-btn">切换备用线路</button>
       </div>
-
-      <!-- 主控制按钮群 -->
-      <div class="flex items-center justify-around mb-4">
-        <button id="modalFavBtn" class="text-gray-400 hover:text-rose-500 text-xl p-3 active:scale-90 transition">
-          <i class="fa-regular fa-heart"></i>
-        </button>
-        <button id="modalPrevBtn" class="text-gray-300 hover:text-white text-2xl p-3 active:scale-90 transition">
-          <i class="fa-solid fa-backward-step"></i>
-        </button>
-        <button id="modalPlayBtn" class="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-2xl shadow-xl shadow-blue-600/40 active:scale-95 transition">
-          <i id="modalPlayIcon" class="fa-solid fa-play ml-0.5"></i>
-        </button>
-        <button id="modalNextBtn" class="text-gray-300 hover:text-white text-2xl p-3 active:scale-90 transition">
-          <i class="fa-solid fa-forward-step"></i>
-        </button>
-        <button id="modalVolumeMuteBtn" class="text-gray-400 hover:text-white text-xl p-3 active:scale-90 transition">
-          <i class="fa-solid fa-volume-high"></i>
-        </button>
+      <div class="modal-btn-row">
+        <button id="modalFavBtn" class="mini-btn" style="font-size:22px;"><i class="fa-regular fa-heart"></i></button>
+        <button id="modalPrevBtn" class="mini-btn" style="font-size:24px;"><i class="fa-solid fa-backward-step"></i></button>
+        <button id="modalPlayBtn" class="modal-play-large"><i id="modalPlayIcon" class="fa-solid fa-play" style="margin-left:3px;"></i></button>
+        <button id="modalNextBtn" class="mini-btn" style="font-size:24px;"><i class="fa-solid fa-forward-step"></i></button>
+        <button id="modalMuteBtn" class="mini-btn" style="font-size:20px;"><i class="fa-solid fa-volume-high"></i></button>
       </div>
-
-      <div class="text-center text-[11px] text-gray-500 font-sans">
-        支持 iOS 锁屏/灵动岛常驻 • 自动断流自愈重连
+      <div style="text-align:center; font-size:11px; color:#4b5563; margin-top:10px;">
+        支持 iOS 锁屏控制 • 息屏常驻保活 • 自动自愈
       </div>
     </div>
   </div>
 
-  <!-- 自定义添加电台弹窗 -->
-  <div id="addStationModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-white/10 shadow-2xl">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-bold text-white">添加自定义电台</h3>
-        <button id="closeAddModalBtn" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <div class="space-y-3 text-sm">
-        <div>
-          <label class="block text-xs text-gray-400 mb-1">电台名称</label>
-          <input id="inputStationName" type="text" placeholder="例如：厦门音乐广播" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-xs text-gray-400 mb-1">直播流地址 (.m3u8 / .mp3 / .aac)</label>
-          <input id="inputStationUrl" type="url" placeholder="http://.../live.m3u8" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-xs text-gray-400 mb-1">分类标签</label>
-          <input id="inputStationTag" type="text" placeholder="地方台 / 音乐 / 新闻" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-blue-500">
-        </div>
-      </div>
-      <div class="mt-5 flex space-x-2.5">
-        <button id="cancelAddBtn" class="flex-1 py-2.5 rounded-xl bg-white/5 text-gray-300 font-medium active:scale-95 transition">取消</button>
-        <button id="confirmAddBtn" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-medium active:scale-95 transition shadow-lg shadow-blue-500/30">添加保存</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 轻量级 Toast 提示 -->
-  <div id="toast" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900/90 text-white border border-white/20 px-4 py-2 rounded-full text-xs shadow-2xl transition-opacity duration-300 opacity-0 pointer-events-none">
-    提示内容
-  </div>
+  <!-- Toast 提示組件 -->
+  <div id="toast" class="toast">提示</div>
 
   <script>
     /**
-     * FM365 核心广播源数据库 (精选全国中央台、重点各省市高可用源)
+     * 电台数据库 (精选全国中央台及省市台稳定高速流)
      */
-    const DEFAULT_STATIONS = [
-      // 国家台系列
+    var DEFAULT_STATIONS = [
       {
         id: "cnr-1",
         name: "中国之声",
@@ -353,18 +665,6 @@
           "http://ngcdn006.cnr.cn/live/szzs/index.m3u8"
         ]
       },
-      // 地方精选与重点台
-      {
-        id: "bj-news",
-        name: "北京新闻广播",
-        category: "地方台",
-        freq: "FM 94.5 / AM 828",
-        icon: "fa-landmark",
-        routes: [
-          "https://lhttp.qtfm.cn/live/322/64k.mp3",
-          "http://ngcdn001.cnr.cn/live/zgzs/index.m3u8"
-        ]
-      },
       {
         id: "bj-traffic",
         name: "北京交通广播",
@@ -376,17 +676,17 @@
         ]
       },
       {
-        id: "sh-news",
-        name: "上海新闻广播",
+        id: "bj-news",
+        name: "北京新闻广播",
         category: "地方台",
-        freq: "FM 93.4 / AM 990",
-        icon: "fa-city",
+        freq: "FM 94.5 / AM 828",
+        icon: "fa-landmark",
         routes: [
-          "https://lhttp.qtfm.cn/live/339/64k.mp3"
+          "https://lhttp.qtfm.cn/live/322/64k.mp3"
         ]
       },
       {
-        id: "sh-love",
+        id: "sh-donggan",
         name: "动感101 (上海流行音乐)",
         category: "音乐台",
         freq: "FM 101.7",
@@ -396,13 +696,13 @@
         ]
       },
       {
-        id: "gd-news",
-        name: "广东新闻广播",
+        id: "sh-news",
+        name: "上海新闻广播",
         category: "地方台",
-        freq: "FM 91.4",
-        icon: "fa-bullhorn",
+        freq: "FM 93.4",
+        icon: "fa-city",
         routes: [
-          "https://lhttp.qtfm.cn/live/402/64k.mp3"
+          "https://lhttp.qtfm.cn/live/339/64k.mp3"
         ]
       },
       {
@@ -426,6 +726,16 @@
         ]
       },
       {
+        id: "gd-news",
+        name: "广东新闻广播",
+        category: "地方台",
+        freq: "FM 91.4",
+        icon: "fa-bullhorn",
+        routes: [
+          "https://lhttp.qtfm.cn/live/402/64k.mp3"
+        ]
+      },
+      {
         id: "sc-traffic",
         name: "四川交通广播",
         category: "交通台",
@@ -437,55 +747,50 @@
       }
     ];
 
-    /**
-     * 播放器核心状态与持久化
-     */
-    let stations = [];
-    let currentCategory = "全部";
-    let currentStationIndex = -1;
-    let currentRouteIndex = 0;
-    let isPlaying = false;
-    let favorites = JSON.parse(localStorage.getItem("fm365_favs") || "[]");
+    var stations = [];
+    var currentCategory = "全部";
+    var currentStationIndex = -1;
+    var currentRouteIndex = 0;
+    var isPlaying = false;
+    var favorites = [];
 
-    // 音频驱动实例
-    let audio = new Audio();
+    try {
+      favorites = JSON.parse(localStorage.getItem("fm365_favs") || "[]");
+    } catch(e) {
+      favorites = [];
+    }
+
+    var audio = new Audio();
     audio.preload = "none";
     audio.setAttribute("playsinline", "true");
     audio.setAttribute("webkit-playsinline", "true");
-    let hls = null;
+    var hls = null;
 
-    /**
-     * 1. iOS 后台保活静音音轨锚点 (Silent Audio Anchor)
-     */
-    const silentAnchor = new Audio();
+    // 保活靜音音軌
+    var silentAnchor = new Audio();
     silentAnchor.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA//OEAAAAAAAAAAAAAAAAAAAAAA==";
     silentAnchor.loop = true;
     silentAnchor.volume = 0.01;
 
     function activateKeepAliveAnchor() {
       if (silentAnchor.paused) {
-        silentAnchor.play().catch(() => {});
+        silentAnchor.play().catch(function() {});
       }
     }
 
-    /**
-     * 2. 看门狗断流自愈监视器 (Stream Auto-Recovery Watchdog)
-     */
-    let watchdogTimer = null;
-    let lastPlaybackTime = 0;
-    let stalledCounter = 0;
+    // 看門狗自愈
+    var watchdogTimer = null;
+    var lastPlaybackTime = 0;
+    var stalledCounter = 0;
 
     function startWatchdog() {
       stopWatchdog();
-      watchdogTimer = setInterval(() => {
+      watchdogTimer = setInterval(function() {
         if (!isPlaying || audio.paused) return;
-        
-        // 采样当前播放秒数
-        const currentTime = audio.currentTime;
+        var currentTime = audio.currentTime;
         if (currentTime === lastPlaybackTime) {
           stalledCounter++;
-          if (stalledCounter >= 4) { // 连续 4 秒未产生位移判定断流
-            console.warn("[Watchdog] 检测到流卡顿凝滞，正在进行自愈重连...");
+          if (stalledCounter >= 4) {
             triggerStreamRecovery();
             stalledCounter = 0;
           }
@@ -507,51 +812,39 @@
 
     function triggerStreamRecovery() {
       if (currentStationIndex === -1) return;
-      showToast("信号抖动，正在自愈重连...");
-      const station = getActiveStation();
-      const nextRouteIndex = (currentRouteIndex + 1) % station.routes.length;
-      playStation(currentStationIndex, nextRouteIndex, true);
-    }
-
-    /**
-     * 初始化数据与事件绑定
-     */
-    function init() {
-      loadStations();
-      renderCategories();
-      renderStationList();
-      bindAudioEvents();
-      bindDomEvents();
-      setupMediaSession();
+      showToast("信号重连自愈中...");
+      var st = getActiveStation();
+      if (!st) return;
+      var nextRoute = (currentRouteIndex + 1) % st.routes.length;
+      playStation(currentStationIndex, nextRoute, true);
     }
 
     function loadStations() {
-      const customStations = JSON.parse(localStorage.getItem("fm365_custom") || "[]");
-      stations = [...DEFAULT_STATIONS, ...customStations];
+      var customStations = [];
+      try {
+        customStations = JSON.parse(localStorage.getItem("fm365_custom") || "[]");
+      } catch(e) {
+        customStations = [];
+      }
+      stations = DEFAULT_STATIONS.concat(customStations);
     }
 
     function getActiveStation() {
       return stations[currentStationIndex] || null;
     }
 
-    /**
-     * 界面渲染逻辑
-     */
     function renderCategories() {
-      const categories = ["全部", "收藏", "国家台", "音乐台", "地方台", "交通台", "自定义"];
-      const container = document.getElementById("categoryBar");
+      var categories = ["全部", "收藏", "国家台", "音乐台", "地方台", "交通台"];
+      var container = document.getElementById("categoryBar");
+      if (!container) return;
       container.innerHTML = "";
 
-      categories.forEach(cat => {
-        const btn = document.createElement("button");
-        const isActive = cat === currentCategory;
-        btn.className = `px-3.5 py-1.5 rounded-full whitespace-nowrap font-medium transition ${
-          isActive 
-            ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" 
-            : "bg-white/5 text-gray-400 hover:text-gray-200 hover:bg-white/10"
-        }`;
+      categories.forEach(function(cat) {
+        var btn = document.createElement("button");
+        var isActive = (cat === currentCategory);
+        btn.className = "cat-pill" + (isActive ? " active" : "");
         btn.textContent = cat;
-        btn.onclick = () => {
+        btn.onclick = function() {
           currentCategory = cat;
           renderCategories();
           renderStationList();
@@ -561,84 +854,83 @@
     }
 
     function renderStationList() {
-      const container = document.getElementById("stationList");
+      var container = document.getElementById("stationList");
+      if (!container) return;
       container.innerHTML = "";
 
-      const filtered = stations.filter(st => {
+      var filtered = stations.filter(function(st) {
         if (currentCategory === "全部") return true;
-        if (currentCategory === "收藏") return favorites.includes(st.id);
-        if (currentCategory === "自定义") return st.isCustom === true;
+        if (currentCategory === "收藏") return favorites.indexOf(st.id) > -1;
         return st.category === currentCategory;
       });
 
       if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="py-16 text-center text-gray-500">
-            <i class="fa-solid fa-satellite-dish text-3xl mb-3 text-gray-600"></i>
-            <p class="text-sm">该分类下暂无电台</p>
-          </div>
-        `;
+        container.innerHTML = '<div style="text-align:center; padding:50px 0; color:#6b7280; font-size:13px;">该分类下暂无电台</div>';
         return;
       }
 
-      filtered.forEach(st => {
-        const originalIndex = stations.findIndex(s => s.id === st.id);
-        const isCurrent = originalIndex === currentStationIndex;
-        const isFav = favorites.includes(st.id);
+      filtered.forEach(function(st) {
+        var originalIndex = -1;
+        for (var i = 0; i < stations.length; i++) {
+          if (stations[i].id === st.id) {
+            originalIndex = i;
+            break;
+          }
+        }
+        var isCurrent = (originalIndex === currentStationIndex);
+        var isFav = favorites.indexOf(st.id) > -1;
 
-        const card = document.createElement("div");
-        card.className = `glass-card p-3.5 rounded-2xl flex items-center justify-between transition active:scale-[0.99] cursor-pointer ${
-          isCurrent ? "active ring-1 ring-blue-500/40" : ""
-        }`;
+        var card = document.createElement("div");
+        card.className = "station-card" + (isCurrent ? " active" : "");
 
-        card.innerHTML = `
-          <div class="flex items-center space-x-3.5 min-w-0 flex-1">
-            <div class="w-11 h-11 rounded-xl ${isCurrent ? 'bg-blue-600 shadow-md shadow-blue-500/40 text-white' : 'bg-white/5 text-blue-400 border border-white/5'} flex items-center justify-center flex-shrink-0">
-              <i class="fa-solid ${st.icon || 'fa-radio'} text-base"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center space-x-2">
-                <h3 class="text-sm font-semibold truncate ${isCurrent ? 'text-blue-400' : 'text-white'}">${st.name}</h3>
-                <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400 border border-white/5 flex-shrink-0">${st.category}</span>
-              </div>
-              <p class="text-xs text-gray-400 truncate mt-0.5">${st.freq || '网络流'} • ${st.routes.length} 条线路</p>
-            </div>
-          </div>
-          <div class="flex items-center space-x-1 ml-2">
-            <button class="fav-btn p-2 text-gray-400 hover:text-rose-500 transition active:scale-90" data-id="${st.id}">
-              <i class="${isFav ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart'} text-sm"></i>
-            </button>
-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-gray-300">
-              ${isCurrent && isPlaying ? '<span class="wave-bar"></span><span class="wave-bar"></span>' : '<i class="fa-solid fa-circle-play text-lg opacity-80"></i>'}
-            </div>
-          </div>
-        `;
+        var rightWaveOrIcon = "";
+        if (isCurrent && isPlaying) {
+          rightWaveOrIcon = '<div class="wave-box"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></div>';
+        } else {
+          rightWaveOrIcon = '<i class="fa-solid fa-circle-play" style="font-size:20px; color:#6b7280;"></i>';
+        }
 
-        card.onclick = (e) => {
+        card.innerHTML = 
+          '<div class="card-left">' +
+            '<div class="card-icon"><i class="fa-solid ' + (st.icon || 'fa-radio') + '"></i></div>' +
+            '<div class="card-meta">' +
+              '<div class="card-title-row">' +
+                '<div class="card-title">' + st.name + '</div>' +
+                '<span class="card-badge">' + st.category + '</span>' +
+              '</div>' +
+              '<div class="card-sub">' + (st.freq || '网络电台') + ' • ' + st.routes.length + ' 条线路</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="card-right">' +
+            '<button class="fav-btn' + (isFav ? ' is-fav' : '') + '" data-id="' + st.id + '">' +
+              '<i class="' + (isFav ? 'fa-solid' : 'fa-regular') + ' fa-heart"></i>' +
+            '</button>' +
+            '<div style="width:36px; display:flex; align-items:center; justify-content:center;">' + rightWaveOrIcon + '</div>' +
+          '</div>';
+
+        card.onclick = function(e) {
           if (e.target.closest(".fav-btn")) return;
           playStation(originalIndex, 0);
         };
 
-        const favBtn = card.querySelector(".fav-btn");
-        favBtn.onclick = (e) => {
-          e.stopPropagation();
-          toggleFavorite(st.id);
-        };
+        var favBtn = card.querySelector(".fav-btn");
+        if (favBtn) {
+          favBtn.onclick = function(e) {
+            e.stopPropagation();
+            toggleFavorite(st.id);
+          };
+        }
 
         container.appendChild(card);
       });
     }
 
-    /**
-     * 播放核心与 HLS 处理
-     */
-    function playStation(index, routeIdx = 0, isRecovery = false) {
+    function playStation(index, routeIdx, isRecovery) {
       if (index < 0 || index >= stations.length) return;
-
       currentStationIndex = index;
-      currentRouteIndex = routeIdx;
-      const st = stations[index];
-      const streamUrl = st.routes[routeIdx];
+      currentRouteIndex = routeIdx || 0;
+      var st = stations[index];
+      var streamUrl = st.routes[currentRouteIndex];
 
       activateKeepAliveAnchor();
       showMiniPlayer();
@@ -649,23 +941,17 @@
         hls = null;
       }
 
-      const isM3U8 = streamUrl.includes(".m3u8");
+      var isM3U8 = streamUrl.indexOf(".m3u8") > -1;
 
-      // Safari 原生对 HLS 具有更佳的电量控制与后台常驻能力
-      if (isM3U8 && !audio.canPlayType("application/vnd.apple.mpegurl") && Hls.isSupported()) {
-        hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 60
-        });
+      if (isM3U8 && !audio.canPlayType("application/vnd.apple.mpegurl") && typeof Hls !== "undefined" && Hls.isSupported()) {
+        hls = new Hls({ enableWorker: true, lowLatencyMode: true });
         hls.loadSource(streamUrl);
         hls.attachMedia(audio);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
           audio.play().catch(handlePlayError);
         });
-        hls.on(Hls.Events.ERROR, (event, data) => {
+        hls.on(Hls.Events.ERROR, function(event, data) {
           if (data.fatal) {
-            console.warn("[HLS Error]", data);
             handleFallbackRoute();
           }
         });
@@ -680,7 +966,7 @@
       updateMediaSession();
       renderStationList();
       if (!isRecovery) {
-        showToast(`已切换至: ${st.name}`);
+        showToast("已切换: " + st.name);
       }
     }
 
@@ -691,7 +977,7 @@
       }
       if (audio.paused) {
         activateKeepAliveAnchor();
-        audio.play().then(() => {
+        audio.play().then(function() {
           isPlaying = true;
           startWatchdog();
           updatePlayerUI("正在直播中", false);
@@ -707,154 +993,148 @@
       renderStationList();
     }
 
-    function handlePlayError(err) {
-      console.warn("[Audio Play Error]", err);
-      updatePlayerUI("线路连接中，尝试备用源...", false);
+    function handlePlayError() {
+      updatePlayerUI("重试线路中...", false);
       handleFallbackRoute();
     }
 
     function handleFallbackRoute() {
-      const st = getActiveStation();
+      var st = getActiveStation();
       if (!st) return;
-
       if (currentRouteIndex + 1 < st.routes.length) {
         currentRouteIndex++;
-        showToast(`正在切换到线路 ${currentRouteIndex + 1}...`);
+        showToast("切换至备用线路 " + (currentRouteIndex + 1));
         playStation(currentStationIndex, currentRouteIndex);
       } else {
-        showToast("该电台全线路无响应，请稍后重试");
+        showToast("全线路无响应，请稍后再试");
         updatePlayerUI("播放失败，请换台", false);
       }
     }
 
     function prevStation() {
       if (stations.length === 0) return;
-      let nextIdx = currentStationIndex - 1;
+      var nextIdx = currentStationIndex - 1;
       if (nextIdx < 0) nextIdx = stations.length - 1;
       playStation(nextIdx, 0);
     }
 
     function nextStation() {
       if (stations.length === 0) return;
-      let nextIdx = (currentStationIndex + 1) % stations.length;
+      var nextIdx = (currentStationIndex + 1) % stations.length;
       playStation(nextIdx, 0);
     }
 
     function toggleFavorite(id) {
-      const idx = favorites.indexOf(id);
+      var idx = favorites.indexOf(id);
       if (idx > -1) {
         favorites.splice(idx, 1);
-        showToast("已移出收藏夹");
+        showToast("已取消收藏");
       } else {
         favorites.push(id);
-        showToast("已加入收藏夹");
+        showToast("已加入收藏");
       }
-      localStorage.setItem("fm365_favs", JSON.stringify(favorites));
+      try {
+        localStorage.setItem("fm365_favs", JSON.stringify(favorites));
+      } catch(e) {}
       renderStationList();
       updateModalFavIcon();
     }
 
-    /**
-     * 界面更新
-     */
     function showMiniPlayer() {
-      const mini = document.getElementById("miniPlayer");
-      mini.classList.remove("translate-y-full");
+      var mini = document.getElementById("miniPlayer");
+      if (mini) mini.classList.remove("hidden-player");
     }
 
     function updatePlayerUI(statusText, isLoading) {
-      const st = getActiveStation();
+      var st = getActiveStation();
       if (!st) return;
 
-      // Mini Player
-      document.getElementById("miniTitle").textContent = st.name;
-      document.getElementById("miniTag").textContent = st.category;
-      document.getElementById("miniStatus").textContent = statusText;
-      const playIcon = document.getElementById("miniPlayIcon");
-      const miniWave = document.getElementById("miniWave");
+      var miniTitle = document.getElementById("miniTitle");
+      var miniTag = document.getElementById("miniTag");
+      var miniStatus = document.getElementById("miniStatus");
+      var miniPlayIcon = document.getElementById("miniPlayIcon");
 
-      if (isPlaying) {
-        playIcon.className = "fa-solid fa-pause text-base";
-        miniWave.classList.remove("hidden");
-      } else {
-        playIcon.className = "fa-solid fa-play ml-0.5 text-base";
-        miniWave.classList.add("hidden");
+      if (miniTitle) miniTitle.textContent = st.name;
+      if (miniTag) miniTag.textContent = st.category;
+      if (miniStatus) miniStatus.textContent = statusText;
+      if (miniPlayIcon) {
+        miniPlayIcon.className = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
       }
 
-      // Full Modal
-      document.getElementById("modalStationTitle").textContent = st.name;
-      document.getElementById("modalStationFreq").textContent = `${st.freq || '网络电台'} • 线路 ${currentRouteIndex + 1}/${st.routes.length}`;
-      document.getElementById("modalStationGroup").textContent = st.category;
-      document.getElementById("modalStreamStatus").textContent = statusText;
-      document.getElementById("routeInfo").textContent = `线路 ${currentRouteIndex + 1} (${st.routes[currentRouteIndex].includes('.m3u8') ? 'HLS 高清' : '直连音轨'})`;
+      var modalTitle = document.getElementById("modalStationTitle");
+      var modalFreq = document.getElementById("modalStationFreq");
+      var modalGroup = document.getElementById("modalStationGroup");
+      var modalStatus = document.getElementById("modalStreamStatus");
+      var routeInfo = document.getElementById("routeInfo");
+      var vinylDisc = document.getElementById("vinylDisc");
+      var modalPlayIcon = document.getElementById("modalPlayIcon");
 
-      const vinylDisc = document.getElementById("vinylDisc");
-      const modalPlayIcon = document.getElementById("modalPlayIcon");
-      if (isPlaying && !isLoading) {
-        vinylDisc.classList.remove("spin-paused");
-        modalPlayIcon.className = "fa-solid fa-pause";
-      } else {
-        vinylDisc.classList.add("spin-paused");
-        modalPlayIcon.className = "fa-solid fa-play ml-0.5";
+      if (modalTitle) modalTitle.textContent = st.name;
+      if (modalFreq) modalFreq.textContent = (st.freq || '网络电台') + " • 线路 " + (currentRouteIndex + 1) + "/" + st.routes.length;
+      if (modalGroup) modalGroup.textContent = st.category;
+      if (modalStatus) modalStatus.textContent = statusText;
+      if (routeInfo) {
+        routeInfo.innerHTML = '<i class="fa-solid fa-circle-nodes" style="color:#10b981; margin-right:5px;"></i> 线路 ' + (currentRouteIndex + 1) + ' (' + (st.routes[currentRouteIndex].indexOf(".m3u8") > -1 ? 'HLS 高清' : '直连音轨') + ')';
+      }
+
+      if (vinylDisc) {
+        if (isPlaying && !isLoading) {
+          vinylDisc.classList.remove("paused");
+        } else {
+          vinylDisc.classList.add("paused");
+        }
+      }
+
+      if (modalPlayIcon) {
+        modalPlayIcon.className = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
       }
 
       updateModalFavIcon();
     }
 
     function updateModalFavIcon() {
-      const st = getActiveStation();
-      const favBtn = document.getElementById("modalFavBtn");
-      if (st && favorites.includes(st.id)) {
-        favBtn.innerHTML = '<i class="fa-solid fa-heart text-rose-500"></i>';
+      var st = getActiveStation();
+      var favBtn = document.getElementById("modalFavBtn");
+      if (!favBtn) return;
+      if (st && favorites.indexOf(st.id) > -1) {
+        favBtn.innerHTML = '<i class="fa-solid fa-heart" style="color:#f43f5e;"></i>';
       } else {
         favBtn.innerHTML = '<i class="fa-regular fa-heart"></i>';
       }
     }
 
-    /**
-     * 3. iOS MediaSession 协议支持 (锁屏/灵动岛海报控制)
-     */
     function setupMediaSession() {
       if (!('mediaSession' in navigator)) return;
-
-      navigator.mediaSession.setActionHandler('play', () => togglePlay());
-      navigator.mediaSession.setActionHandler('pause', () => togglePlay());
-      navigator.mediaSession.setActionHandler('previoustrack', () => prevStation());
-      navigator.mediaSession.setActionHandler('nexttrack', () => nextStation());
-      navigator.mediaSession.setActionHandler('stop', () => {
-        audio.pause();
-        isPlaying = false;
-        updatePlayerUI("已停止", false);
-      });
+      navigator.mediaSession.setActionHandler('play', function() { togglePlay(); });
+      navigator.mediaSession.setActionHandler('pause', function() { togglePlay(); });
+      navigator.mediaSession.setActionHandler('previoustrack', function() { prevStation(); });
+      navigator.mediaSession.setActionHandler('nexttrack', function() { nextStation(); });
     }
 
     function updateMediaSession() {
       if (!('mediaSession' in navigator)) return;
-      const st = getActiveStation();
+      var st = getActiveStation();
       if (!st) return;
 
       navigator.mediaSession.metadata = new MediaMetadata({
         title: st.name,
-        artist: `FM365 收音机 • ${st.freq || '高清广播'}`,
-        album: `${st.category} 实时流`,
+        artist: "FM365 收音机 • " + (st.freq || '实时流'),
+        album: st.category + " 直播广播",
         artwork: [
-          { src: 'https://cdn-icons-png.flxml.com/512/3075/3075908.png', sizes: '512x512', type: 'image/png' }
+          { src: 'https://cdn-icons-png.flaticon.com/512/3075/3075908.png', sizes: '512x512', type: 'image/png' }
         ]
       });
       navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
     }
 
-    /**
-     * 原生事件与自愈监听
-     */
     function bindAudioEvents() {
-      audio.addEventListener("playing", () => {
+      audio.addEventListener("playing", function() {
         isPlaying = true;
         updatePlayerUI("正在直播中", false);
         updateMediaSession();
       });
 
-      audio.addEventListener("pause", () => {
+      audio.addEventListener("pause", function() {
         if (!audio.seeking) {
           isPlaying = false;
           updatePlayerUI("已暂停", false);
@@ -862,17 +1142,11 @@
         }
       });
 
-      audio.addEventListener("waiting", () => {
-        updatePlayerUI("信号加载中...", true);
+      audio.addEventListener("waiting", function() {
+        updatePlayerUI("缓冲加载中...", true);
       });
 
-      audio.addEventListener("stalled", () => {
-        console.warn("[Audio] 网络连接停滞...");
-        updatePlayerUI("网络波动缓冲中...", true);
-      });
-
-      audio.addEventListener("error", (e) => {
-        console.error("[Audio Native Error]", e);
+      audio.addEventListener("error", function() {
         handlePlaybackError();
       });
     }
@@ -881,141 +1155,132 @@
       handleFallbackRoute();
     }
 
-    /**
-     * DOM 交互绑定
-     */
     function bindDomEvents() {
-      // 迷你条点击
-      document.getElementById("miniPlayerInfo").onclick = () => {
-        openFullModal();
-      };
-      document.getElementById("miniPlayBtn").onclick = (e) => {
-        e.stopPropagation();
-        togglePlay();
-      };
-      document.getElementById("miniPrevBtn").onclick = (e) => {
-        e.stopPropagation();
-        prevStation();
-      };
-      document.getElementById("miniNextBtn").onclick = (e) => {
-        e.stopPropagation();
-        nextStation();
-      };
-
-      // 模态弹窗控制
-      const modal = document.getElementById("fullPlayerModal");
-      document.getElementById("closeFullModalBtn").onclick = () => {
-        modal.classList.add("translate-y-full");
-      };
-      document.getElementById("modalPlayBtn").onclick = togglePlay;
-      document.getElementById("modalPrevBtn").onclick = prevStation;
-      document.getElementById("modalNextBtn").onclick = nextStation;
-      document.getElementById("modalFavBtn").onclick = () => {
-        const st = getActiveStation();
-        if (st) toggleFavorite(st.id);
-      };
-
-      // 线路切换
-      document.getElementById("switchRouteBtn").onclick = () => {
-        const st = getActiveStation();
-        if (!st) return;
-        currentRouteIndex = (currentRouteIndex + 1) % st.routes.length;
-        playStation(currentStationIndex, currentRouteIndex);
-      };
-
-      // 提取/复制源
-      document.getElementById("copyStreamModalBtn").onclick = () => {
-        const st = getActiveStation();
-        if (!st) return;
-        const currentUrl = st.routes[currentRouteIndex];
-        navigator.clipboard.writeText(currentUrl).then(() => {
-          showToast("直播流链接已复制到剪贴板！");
-        }).catch(() => {
-          showToast("复制失败，请手动长按复制");
-        });
-      };
-
-      // 导出 M3U
-      document.getElementById("exportM3uBtn").onclick = exportM3U;
-
-      // 添加自定义电台
-      const addModal = document.getElementById("addStationModal");
-      document.getElementById("addStationBtn").onclick = () => {
-        addModal.classList.remove("hidden");
-      };
-      document.getElementById("closeAddModalBtn").onclick = () => {
-        addModal.classList.add("hidden");
-      };
-      document.getElementById("cancelAddBtn").onclick = () => {
-        addModal.classList.add("hidden");
-      };
-      document.getElementById("confirmAddBtn").onclick = handleAddCustomStation;
-    }
-
-    function openFullModal() {
-      document.getElementById("fullPlayerModal").classList.remove("translate-y-full");
-    }
-
-    function handleAddCustomStation() {
-      const name = document.getElementById("inputStationName").value.trim();
-      const url = document.getElementById("inputStationUrl").value.trim();
-      const tag = document.getElementById("inputStationTag").value.trim() || "自定义";
-
-      if (!name || !url) {
-        showToast("请填写完整的电台名称与链接");
-        return;
+      var miniInfo = document.getElementById("miniPlayerInfo");
+      if (miniInfo) {
+        miniInfo.onclick = function() {
+          var modal = document.getElementById("fullPlayerModal");
+          if (modal) modal.classList.remove("modal-closed");
+        };
       }
 
-      const newStation = {
-        id: "custom-" + Date.now(),
-        name: name,
-        category: tag,
-        freq: "自定义源",
-        icon: "fa-rss",
-        isCustom: true,
-        routes: [url]
-      };
+      var miniPlay = document.getElementById("miniPlayBtn");
+      if (miniPlay) {
+        miniPlay.onclick = function(e) {
+          e.stopPropagation();
+          togglePlay();
+        };
+      }
 
-      const customStations = JSON.parse(localStorage.getItem("fm365_custom") || "[]");
-      customStations.unshift(newStation);
-      localStorage.setItem("fm365_custom", JSON.stringify(customStations));
+      var miniPrev = document.getElementById("miniPrevBtn");
+      if (miniPrev) {
+        miniPrev.onclick = function(e) {
+          e.stopPropagation();
+          prevStation();
+        };
+      }
 
-      loadStations();
-      renderStationList();
-      document.getElementById("addStationModal").classList.add("hidden");
-      document.getElementById("inputStationName").value = "";
-      document.getElementById("inputStationUrl").value = "";
-      showToast("新电台添加成功！");
-    }
+      var miniNext = document.getElementById("miniNextBtn");
+      if (miniNext) {
+        miniNext.onclick = function(e) {
+          e.stopPropagation();
+          nextStation();
+        };
+      }
 
-    function exportM3U() {
-      let m3u = "#EXTM3U
-";
-      stations.forEach(st => {
-        m3u += `#EXTINF:-1 group-title="${st.category}", ${st.name}
-${st.routes[0]}
-`;
-      });
+      var closeBtn = document.getElementById("closeFullModalBtn");
+      if (closeBtn) {
+        closeBtn.onclick = function() {
+          var modal = document.getElementById("fullPlayerModal");
+          if (modal) modal.classList.add("modal-closed");
+        };
+      }
 
-      const blob = new Blob([m3u], { type: "audio/x-mpegurl" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "FM365_Radio_List.m3u";
-      a.click();
-      showToast("已生成并下载 M3U 播放列表");
+      var modalPlay = document.getElementById("modalPlayBtn");
+      if (modalPlay) modalPlay.onclick = togglePlay;
+
+      var modalPrev = document.getElementById("modalPrevBtn");
+      if (modalPrev) modalPrev.onclick = prevStation;
+
+      var modalNext = document.getElementById("modalNextBtn");
+      if (modalNext) modalNext.onclick = nextStation;
+
+      var modalFav = document.getElementById("modalFavBtn");
+      if (modalFav) {
+        modalFav.onclick = function() {
+          var st = getActiveStation();
+          if (st) toggleFavorite(st.id);
+        };
+      }
+
+      var switchBtn = document.getElementById("switchRouteBtn");
+      if (switchBtn) {
+        switchBtn.onclick = function() {
+          var st = getActiveStation();
+          if (!st) return;
+          currentRouteIndex = (currentRouteIndex + 1) % st.routes.length;
+          playStation(currentStationIndex, currentRouteIndex);
+        };
+      }
+
+      var copyBtn = document.getElementById("copyStreamModalBtn");
+      if (copyBtn) {
+        copyBtn.onclick = function() {
+          var st = getActiveStation();
+          if (!st) return;
+          var url = st.routes[currentRouteIndex];
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(function() {
+              showToast("流媒体地址已复制！");
+            });
+          } else {
+            showToast("复制失败");
+          }
+        };
+      }
+
+      var exportBtn = document.getElementById("exportM3uBtn");
+      if (exportBtn) {
+        exportBtn.onclick = function() {
+          var m3u = "#EXTM3U\n";
+          stations.forEach(function(st) {
+            m3u += "#EXTINF:-1 group-title=\"" + st.category + "\", " + st.name + "\n" + st.routes[0] + "\n";
+          });
+          var blob = new Blob([m3u], { type: "audio/x-mpegurl" });
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "FM365_Radio.m3u";
+          a.click();
+          showToast("已下载 M3U 播放列表");
+        };
+      }
     }
 
     function showToast(text) {
-      const toast = document.getElementById("toast");
+      var toast = document.getElementById("toast");
+      if (!toast) return;
       toast.textContent = text;
-      toast.classList.remove("opacity-0");
-      setTimeout(() => {
-        toast.classList.add("opacity-0");
-      }, 2500);
+      toast.classList.add("show");
+      setTimeout(function() {
+        toast.classList.remove("show");
+      }, 2000);
     }
 
-    // 页面加载启动
-    window.addEventListener("DOMContentLoaded", init);
+    // 立即執行初始化（不等待可能延遲的事件，並在 DOM 加載後再次加固）
+    function startApp() {
+      loadStations();
+      renderCategories();
+      renderStationList();
+      bindAudioEvents();
+      bindDomEvents();
+      setupMediaSession();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", startApp);
+    } else {
+      startApp();
+    }
   </script>
 </body>
 </html>
