@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FM365网络收音机">
+  <meta name="theme-color" content="#0d0f12">
+  <title>FM365 网络收音机 Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --safe-top: env(safe-area-inset-top, 20px);
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    body {
+      background-color: #0b0d11;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      padding-top: var(--safe-top);
+      padding-bottom: calc(var(--safe-bottom) + 90px);
+    }
+    .glass-nav {
+      background: rgba(18, 22, 30, 0.82);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(24, 29, 40, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .glass-card.active {
+      background: rgba(37, 99, 235, 0.18);
+      border-color: rgba(96, 165, 250, 0.5);
+    }
+    .glass-player {
+      background: rgba(15, 19, 28, 0.92);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: max(var(--safe-bottom), 12px);
+    }
+    .modal-sheet {
+      background: #0f131c;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: max(var(--safe-bottom), 24px);
+    }
+    @keyframes disc-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin {
+      animation: disc-spin 18s linear infinite;
+    }
+    .spin-paused {
+      animation-play-state: paused;
+    }
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .wave-bar {
+      display: inline-block;
+      width: 3px;
+      height: 16px;
+      margin: 0 1px;
+      border-radius: 2px;
+      background-color: #3b82f6;
+      animation: wave 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes wave {
+      0% { height: 4px; opacity: 0.4; }
+      100% { height: 18px; opacity: 1; }
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.1s; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- 顶部状态栏与标题 -->
+  <header class="fixed top-0 left-0 right-0 z-40 glass-nav" style="padding-top: var(--safe-top);">
+    <div class="flex items-center justify-between px-4 h-14">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <i class="fa-solid fa-tower-broadcast text-white text-sm"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+            FM365 收音机
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30">Pro 极速版</span>
+          </h1>
+        </div>
+      </div>
+      <div class="flex items-center space-x-1">
+        <button id="addStationBtn" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 transition">
+          <i class="fa-solid fa-plus text-sm"></i>
+        </button>
+        <button id="exportM3uBtn" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 transition" title="导出 M3U">
+          <i class="fa-solid fa-download text-sm"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 分类滑动选择器 -->
+    <div class="flex space-x-2 px-4 pb-2.5 overflow-x-auto scrollbar-none text-xs" id="categoryBar">
+      <!-- 动态生成 -->
+    </div>
+  </header>
+
+  <!-- 顶栏占位符 -->
+  <div class="h-24"></div>
+
+  <!-- 主体内容：电台列表 -->
+  <main class="px-4 py-2 space-y-2.5" id="stationList">
+    <!-- 动态生成电台卡片 -->
+  </main>
+
+  <!-- 底部常驻迷你播放条 (iOS 原生触觉) -->
+  <footer id="miniPlayer" class="fixed bottom-0 left-0 right-0 z-40 glass-player flex flex-col cursor-pointer transition-transform duration-300 transform translate-y-full">
+    <div class="px-4 pt-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3 flex-1 min-w-0" id="miniPlayerInfo">
+        <div class="relative w-12 h-12 rounded-xl bg-gray-800 overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
+          <img id="miniCover" src="" class="w-full h-full object-cover hidden">
+          <i id="miniCoverIcon" class="fa-solid fa-radio text-blue-400 text-lg"></i>
+          <div id="miniWave" class="absolute inset-0 bg-black/40 flex items-center justify-center hidden">
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+          </div>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center space-x-1.5">
+            <h4 id="miniTitle" class="text-sm font-semibold truncate text-white">请选择电台</h4>
+            <span id="miniTag" class="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">国家台</span>
+          </div>
+          <p id="miniStatus" class="text-xs text-gray-400 truncate mt-0.5">准备就绪</p>
+        </div>
+      </div>
+
+      <!-- 控制按键 -->
+      <div class="flex items-center space-x-3 ml-2 flex-shrink-0">
+        <button id="miniPrevBtn" class="text-gray-400 hover:text-white p-2 active:scale-90 transition">
+          <i class="fa-solid fa-backward-step text-base"></i>
+        </button>
+        <button id="miniPlayBtn" class="w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/40 active:scale-95 transition">
+          <i id="miniPlayIcon" class="fa-solid fa-play ml-0.5 text-base"></i>
+        </button>
+        <button id="miniNextBtn" class="text-gray-400 hover:text-white p-2 active:scale-90 transition">
+          <i class="fa-solid fa-forward-step text-base"></i>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 全屏沉浸黑胶播放模态框 (Full Modal Player) -->
+  <div id="fullPlayerModal" class="fixed inset-0 z-50 bg-[#0a0d14] flex flex-col justify-between transition-transform duration-300 transform translate-y-full" style="padding-top: var(--safe-top);">
+    <!-- 顶部返回栏 -->
+    <div class="px-4 h-14 flex items-center justify-between">
+      <button id="closeFullModalBtn" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 transition">
+        <i class="fa-solid fa-chevron-down text-lg"></i>
+      </button>
+      <div class="text-center">
+        <span class="text-[11px] text-gray-400 uppercase tracking-widest">LIVE BROADCAST</span>
+        <h3 id="modalStationGroup" class="text-xs font-semibold text-blue-400">全国重点电台</h3>
+      </div>
+      <button id="copyStreamModalBtn" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 transition" title="复制直播流">
+        <i class="fa-solid fa-share-nodes text-base"></i>
+      </button>
+    </div>
+
+    <!-- 黑胶唱盘视觉区 -->
+    <div class="flex-1 flex flex-col items-center justify-center px-8 relative">
+      <div class="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full p-2 bg-gradient-to-tr from-gray-900 via-gray-800 to-black shadow-2xl shadow-blue-900/30 flex items-center justify-center border border-white/10">
+        <!-- 黑胶纹理 -->
+        <div id="vinylDisc" class="w-full h-full rounded-full bg-[#111] border-4 border-gray-900 shadow-inner flex items-center justify-center relative overflow-hidden spin spin-paused">
+          <div class="absolute inset-0 rounded-full opacity-30" style="background: repeating-radial-gradient(circle, #222 0, #222 2px, #0e0e0e 3px, #0e0e0e 4px);"></div>
+          <!-- 唱片中心封面 -->
+          <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-600 border-2 border-white/40 flex items-center justify-center shadow-lg relative z-10 overflow-hidden">
+            <i class="fa-solid fa-tower-cell text-white text-2xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 实时元数据信息 -->
+      <div class="text-center mt-8 w-full max-w-xs">
+        <h2 id="modalStationTitle" class="text-xl font-bold text-white tracking-wide truncate">中国之声</h2>
+        <p id="modalStationFreq" class="text-xs text-blue-400 font-mono mt-1">FM 106.1 MHz • 高清广播</p>
+        <p id="modalStreamStatus" class="text-xs text-gray-400 mt-2 px-3 py-1 bg-white/5 rounded-full inline-block border border-white/5">正在准备音频流...</p>
+      </div>
+    </div>
+
+    <!-- 底部全功能播放控制器 -->
+    <div class="modal-sheet px-6 pt-4 pb-6">
+      <!-- 线路选择器 -->
+      <div class="flex items-center justify-between text-xs text-gray-400 mb-4 px-2">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="routeInfo">主线路 (高速源)</span>
+        </span>
+        <button id="switchRouteBtn" class="text-blue-400 hover:text-blue-300 font-medium">切换备用线路</button>
+      </div>
+
+      <!-- 主控制按钮群 -->
+      <div class="flex items-center justify-around mb-4">
+        <button id="modalFavBtn" class="text-gray-400 hover:text-rose-500 text-xl p-3 active:scale-90 transition">
+          <i class="fa-regular fa-heart"></i>
+        </button>
+        <button id="modalPrevBtn" class="text-gray-300 hover:text-white text-2xl p-3 active:scale-90 transition">
+          <i class="fa-solid fa-backward-step"></i>
+        </button>
+        <button id="modalPlayBtn" class="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-2xl shadow-xl shadow-blue-600/40 active:scale-95 transition">
+          <i id="modalPlayIcon" class="fa-solid fa-play ml-0.5"></i>
+        </button>
+        <button id="modalNextBtn" class="text-gray-300 hover:text-white text-2xl p-3 active:scale-90 transition">
+          <i class="fa-solid fa-forward-step"></i>
+        </button>
+        <button id="modalVolumeMuteBtn" class="text-gray-400 hover:text-white text-xl p-3 active:scale-90 transition">
+          <i class="fa-solid fa-volume-high"></i>
+        </button>
+      </div>
+
+      <div class="text-center text-[11px] text-gray-500 font-sans">
+        支持 iOS 锁屏/灵动岛常驻 • 自动断流自愈重连
+      </div>
+    </div>
+  </div>
+
+  <!-- 自定义添加电台弹窗 -->
+  <div id="addStationModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-white/10 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-white">添加自定义电台</h3>
+        <button id="closeAddModalBtn" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">电台名称</label>
+          <input id="inputStationName" type="text" placeholder="例如：厦门音乐广播" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">直播流地址 (.m3u8 / .mp3 / .aac)</label>
+          <input id="inputStationUrl" type="url" placeholder="http://.../live.m3u8" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">分类标签</label>
+          <input id="inputStationTag" type="text" placeholder="地方台 / 音乐 / 新闻" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-blue-500">
+        </div>
+      </div>
+      <div class="mt-5 flex space-x-2.5">
+        <button id="cancelAddBtn" class="flex-1 py-2.5 rounded-xl bg-white/5 text-gray-300 font-medium active:scale-95 transition">取消</button>
+        <button id="confirmAddBtn" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-medium active:scale-95 transition shadow-lg shadow-blue-500/30">添加保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 轻量级 Toast 提示 -->
+  <div id="toast" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900/90 text-white border border-white/20 px-4 py-2 rounded-full text-xs shadow-2xl transition-opacity duration-300 opacity-0 pointer-events-none">
+    提示内容
+  </div>
+
+  <script>
+    /**
+     * FM365 核心广播源数据库 (精选全国中央台、重点各省市高可用源)
+     */
+    const DEFAULT_STATIONS = [
+      // 国家台系列
+      {
+        id: "cnr-1",
+        name: "中国之声",
+        category: "国家台",
+        freq: "FM 106.1",
+        icon: "fa-tower-broadcast",
+        routes: [
+          "http://ngcdn001.cnr.cn/live/zgzs/index.m3u8",
+          "https://lhttp.qtfm.cn/live/386/64k.mp3"
+        ]
+      },
+      {
+        id: "cnr-2",
+        name: "经济之声",
+        category: "国家台",
+        freq: "FM 96.6",
+        icon: "fa-chart-line",
+        routes: [
+          "http://ngcdn002.cnr.cn/live/jjzs/index.m3u8",
+          "https://lhttp.qtfm.cn/live/387/64k.mp3"
+        ]
+      },
+      {
+        id: "cnr-3",
+        name: "音乐之声 (Music Radio)",
+        category: "音乐台",
+        freq: "FM 90.0",
+        icon: "fa-music",
+        routes: [
+          "http://ngcdn003.cnr.cn/live/yyzs/index.m3u8",
+          "https://lhttp.qtfm.cn/live/388/64k.mp3"
+        ]
+      },
+      {
+        id: "cnr-4",
+        name: "经典音乐广播",
+        category: "音乐台",
+        freq: "FM 101.8",
+        icon: "fa-compact-disc",
+        routes: [
+          "http://ngcdn004.cnr.cn/live/dszs/index.m3u8",
+          "https://lhttp.qtfm.cn/live/4925/64k.mp3"
+        ]
+      },
+      {
+        id: "cri-news",
+        name: "环球资讯广播",
+        category: "国家台",
+        freq: "FM 90.5",
+        icon: "fa-earth-asia",
+        routes: [
+          "http://ngcdn005.cnr.cn/live/zhzs/index.m3u8",
+          "https://lhttp.qtfm.cn/live/1004/64k.mp3"
+        ]
+      },
+      {
+        id: "cnr-bay",
+        name: "大湾区之声",
+        category: "国家台",
+        freq: "FM 101.2",
+        icon: "fa-water",
+        routes: [
+          "http://ngcdn014.cnr.cn/live/dwqzs/index.m3u8"
+        ]
+      },
+      {
+        id: "cnr-shenzhou",
+        name: "神州之声",
+        category: "国家台",
+        freq: "AM 684",
+        icon: "fa-podcast",
+        routes: [
+          "http://ngcdn006.cnr.cn/live/szzs/index.m3u8"
+        ]
+      },
+      // 地方精选与重点台
+      {
+        id: "bj-news",
+        name: "北京新闻广播",
+        category: "地方台",
+        freq: "FM 94.5 / AM 828",
+        icon: "fa-landmark",
+        routes: [
+          "https://lhttp.qtfm.cn/live/322/64k.mp3",
+          "http://ngcdn001.cnr.cn/live/zgzs/index.m3u8"
+        ]
+      },
+      {
+        id: "bj-traffic",
+        name: "北京交通广播",
+        category: "交通台",
+        freq: "FM 103.9",
+        icon: "fa-car",
+        routes: [
+          "https://lhttp.qtfm.cn/live/326/64k.mp3"
+        ]
+      },
+      {
+        id: "sh-news",
+        name: "上海新闻广播",
+        category: "地方台",
+        freq: "FM 93.4 / AM 990",
+        icon: "fa-city",
+        routes: [
+          "https://lhttp.qtfm.cn/live/339/64k.mp3"
+        ]
+      },
+      {
+        id: "sh-love",
+        name: "动感101 (上海流行音乐)",
+        category: "音乐台",
+        freq: "FM 101.7",
+        icon: "fa-headphones",
+        routes: [
+          "https://lhttp.qtfm.cn/live/343/64k.mp3"
+        ]
+      },
+      {
+        id: "gd-news",
+        name: "广东新闻广播",
+        category: "地方台",
+        freq: "FM 91.4",
+        icon: "fa-bullhorn",
+        routes: [
+          "https://lhttp.qtfm.cn/live/402/64k.mp3"
+        ]
+      },
+      {
+        id: "fj-news",
+        name: "福建新闻广播",
+        category: "地方台",
+        freq: "FM 103.6",
+        icon: "fa-mountain-sun",
+        routes: [
+          "https://lhttp.qtfm.cn/live/1019/64k.mp3"
+        ]
+      },
+      {
+        id: "fj-traffic",
+        name: "福建交通广播",
+        category: "交通台",
+        freq: "FM 100.7",
+        icon: "fa-route",
+        routes: [
+          "https://lhttp.qtfm.cn/live/1020/64k.mp3"
+        ]
+      },
+      {
+        id: "sc-traffic",
+        name: "四川交通广播",
+        category: "交通台",
+        freq: "FM 101.7",
+        icon: "fa-road",
+        routes: [
+          "https://lhttp.qtfm.cn/live/471/64k.mp3"
+        ]
+      }
+    ];
+
+    /**
+     * 播放器核心状态与持久化
+     */
+    let stations = [];
+    let currentCategory = "全部";
+    let currentStationIndex = -1;
+    let currentRouteIndex = 0;
+    let isPlaying = false;
+    let favorites = JSON.parse(localStorage.getItem("fm365_favs") || "[]");
+
+    // 音频驱动实例
+    let audio = new Audio();
+    audio.preload = "none";
+    audio.setAttribute("playsinline", "true");
+    audio.setAttribute("webkit-playsinline", "true");
+    let hls = null;
+
+    /**
+     * 1. iOS 后台保活静音音轨锚点 (Silent Audio Anchor)
+     */
+    const silentAnchor = new Audio();
+    silentAnchor.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA//OEAAAAAAAAAAAAAAAAAAAAAA==";
+    silentAnchor.loop = true;
+    silentAnchor.volume = 0.01;
+
+    function activateKeepAliveAnchor() {
+      if (silentAnchor.paused) {
+        silentAnchor.play().catch(() => {});
+      }
+    }
+
+    /**
+     * 2. 看门狗断流自愈监视器 (Stream Auto-Recovery Watchdog)
+     */
+    let watchdogTimer = null;
+    let lastPlaybackTime = 0;
+    let stalledCounter = 0;
+
+    function startWatchdog() {
+      stopWatchdog();
+      watchdogTimer = setInterval(() => {
+        if (!isPlaying || audio.paused) return;
+        
+        // 采样当前播放秒数
+        const currentTime = audio.currentTime;
+        if (currentTime === lastPlaybackTime) {
+          stalledCounter++;
+          if (stalledCounter >= 4) { // 连续 4 秒未产生位移判定断流
+            console.warn("[Watchdog] 检测到流卡顿凝滞，正在进行自愈重连...");
+            triggerStreamRecovery();
+            stalledCounter = 0;
+          }
+        } else {
+          lastPlaybackTime = currentTime;
+          stalledCounter = 0;
+        }
+      }, 1000);
+    }
+
+    function stopWatchdog() {
+      if (watchdogTimer) {
+        clearInterval(watchdogTimer);
+        watchdogTimer = null;
+      }
+      stalledCounter = 0;
+      lastPlaybackTime = 0;
+    }
+
+    function triggerStreamRecovery() {
+      if (currentStationIndex === -1) return;
+      showToast("信号抖动，正在自愈重连...");
+      const station = getActiveStation();
+      const nextRouteIndex = (currentRouteIndex + 1) % station.routes.length;
+      playStation(currentStationIndex, nextRouteIndex, true);
+    }
+
+    /**
+     * 初始化数据与事件绑定
+     */
+    function init() {
+      loadStations();
+      renderCategories();
+      renderStationList();
+      bindAudioEvents();
+      bindDomEvents();
+      setupMediaSession();
+    }
+
+    function loadStations() {
+      const customStations = JSON.parse(localStorage.getItem("fm365_custom") || "[]");
+      stations = [...DEFAULT_STATIONS, ...customStations];
+    }
+
+    function getActiveStation() {
+      return stations[currentStationIndex] || null;
+    }
+
+    /**
+     * 界面渲染逻辑
+     */
+    function renderCategories() {
+      const categories = ["全部", "收藏", "国家台", "音乐台", "地方台", "交通台", "自定义"];
+      const container = document.getElementById("categoryBar");
+      container.innerHTML = "";
+
+      categories.forEach(cat => {
+        const btn = document.createElement("button");
+        const isActive = cat === currentCategory;
+        btn.className = `px-3.5 py-1.5 rounded-full whitespace-nowrap font-medium transition ${
+          isActive 
+            ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" 
+            : "bg-white/5 text-gray-400 hover:text-gray-200 hover:bg-white/10"
+        }`;
+        btn.textContent = cat;
+        btn.onclick = () => {
+          currentCategory = cat;
+          renderCategories();
+          renderStationList();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderStationList() {
+      const container = document.getElementById("stationList");
+      container.innerHTML = "";
+
+      const filtered = stations.filter(st => {
+        if (currentCategory === "全部") return true;
+        if (currentCategory === "收藏") return favorites.includes(st.id);
+        if (currentCategory === "自定义") return st.isCustom === true;
+        return st.category === currentCategory;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="py-16 text-center text-gray-500">
+            <i class="fa-solid fa-satellite-dish text-3xl mb-3 text-gray-600"></i>
+            <p class="text-sm">该分类下暂无电台</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(st => {
+        const originalIndex = stations.findIndex(s => s.id === st.id);
+        const isCurrent = originalIndex === currentStationIndex;
+        const isFav = favorites.includes(st.id);
+
+        const card = document.createElement("div");
+        card.className = `glass-card p-3.5 rounded-2xl flex items-center justify-between transition active:scale-[0.99] cursor-pointer ${
+          isCurrent ? "active ring-1 ring-blue-500/40" : ""
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-center space-x-3.5 min-w-0 flex-1">
+            <div class="w-11 h-11 rounded-xl ${isCurrent ? 'bg-blue-600 shadow-md shadow-blue-500/40 text-white' : 'bg-white/5 text-blue-400 border border-white/5'} flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid ${st.icon || 'fa-radio'} text-base"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center space-x-2">
+                <h3 class="text-sm font-semibold truncate ${isCurrent ? 'text-blue-400' : 'text-white'}">${st.name}</h3>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400 border border-white/5 flex-shrink-0">${st.category}</span>
+              </div>
+              <p class="text-xs text-gray-400 truncate mt-0.5">${st.freq || '网络流'} • ${st.routes.length} 条线路</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-1 ml-2">
+            <button class="fav-btn p-2 text-gray-400 hover:text-rose-500 transition active:scale-90" data-id="${st.id}">
+              <i class="${isFav ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart'} text-sm"></i>
+            </button>
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-gray-300">
+              ${isCurrent && isPlaying ? '<span class="wave-bar"></span><span class="wave-bar"></span>' : '<i class="fa-solid fa-circle-play text-lg opacity-80"></i>'}
+            </div>
+          </div>
+        `;
+
+        card.onclick = (e) => {
+          if (e.target.closest(".fav-btn")) return;
+          playStation(originalIndex, 0);
+        };
+
+        const favBtn = card.querySelector(".fav-btn");
+        favBtn.onclick = (e) => {
+          e.stopPropagation();
+          toggleFavorite(st.id);
+        };
+
+        container.appendChild(card);
+      });
+    }
+
+    /**
+     * 播放核心与 HLS 处理
+     */
+    function playStation(index, routeIdx = 0, isRecovery = false) {
+      if (index < 0 || index >= stations.length) return;
+
+      currentStationIndex = index;
+      currentRouteIndex = routeIdx;
+      const st = stations[index];
+      const streamUrl = st.routes[routeIdx];
+
+      activateKeepAliveAnchor();
+      showMiniPlayer();
+      updatePlayerUI("正在缓冲直播流...", true);
+
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+
+      const isM3U8 = streamUrl.includes(".m3u8");
+
+      // Safari 原生对 HLS 具有更佳的电量控制与后台常驻能力
+      if (isM3U8 && !audio.canPlayType("application/vnd.apple.mpegurl") && Hls.isSupported()) {
+        hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 60
+        });
+        hls.loadSource(streamUrl);
+        hls.attachMedia(audio);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          audio.play().catch(handlePlayError);
+        });
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            console.warn("[HLS Error]", data);
+            handleFallbackRoute();
+          }
+        });
+      } else {
+        audio.src = streamUrl;
+        audio.load();
+        audio.play().catch(handlePlayError);
+      }
+
+      isPlaying = true;
+      startWatchdog();
+      updateMediaSession();
+      renderStationList();
+      if (!isRecovery) {
+        showToast(`已切换至: ${st.name}`);
+      }
+    }
+
+    function togglePlay() {
+      if (currentStationIndex === -1 && stations.length > 0) {
+        playStation(0, 0);
+        return;
+      }
+      if (audio.paused) {
+        activateKeepAliveAnchor();
+        audio.play().then(() => {
+          isPlaying = true;
+          startWatchdog();
+          updatePlayerUI("正在直播中", false);
+          updateMediaSession();
+        }).catch(handlePlayError);
+      } else {
+        audio.pause();
+        isPlaying = false;
+        stopWatchdog();
+        updatePlayerUI("已暂停", false);
+        updateMediaSession();
+      }
+      renderStationList();
+    }
+
+    function handlePlayError(err) {
+      console.warn("[Audio Play Error]", err);
+      updatePlayerUI("线路连接中，尝试备用源...", false);
+      handleFallbackRoute();
+    }
+
+    function handleFallbackRoute() {
+      const st = getActiveStation();
+      if (!st) return;
+
+      if (currentRouteIndex + 1 < st.routes.length) {
+        currentRouteIndex++;
+        showToast(`正在切换到线路 ${currentRouteIndex + 1}...`);
+        playStation(currentStationIndex, currentRouteIndex);
+      } else {
+        showToast("该电台全线路无响应，请稍后重试");
+        updatePlayerUI("播放失败，请换台", false);
+      }
+    }
+
+    function prevStation() {
+      if (stations.length === 0) return;
+      let nextIdx = currentStationIndex - 1;
+      if (nextIdx < 0) nextIdx = stations.length - 1;
+      playStation(nextIdx, 0);
+    }
+
+    function nextStation() {
+      if (stations.length === 0) return;
+      let nextIdx = (currentStationIndex + 1) % stations.length;
+      playStation(nextIdx, 0);
+    }
+
+    function toggleFavorite(id) {
+      const idx = favorites.indexOf(id);
+      if (idx > -1) {
+        favorites.splice(idx, 1);
+        showToast("已移出收藏夹");
+      } else {
+        favorites.push(id);
+        showToast("已加入收藏夹");
+      }
+      localStorage.setItem("fm365_favs", JSON.stringify(favorites));
+      renderStationList();
+      updateModalFavIcon();
+    }
+
+    /**
+     * 界面更新
+     */
+    function showMiniPlayer() {
+      const mini = document.getElementById("miniPlayer");
+      mini.classList.remove("translate-y-full");
+    }
+
+    function updatePlayerUI(statusText, isLoading) {
+      const st = getActiveStation();
+      if (!st) return;
+
+      // Mini Player
+      document.getElementById("miniTitle").textContent = st.name;
+      document.getElementById("miniTag").textContent = st.category;
+      document.getElementById("miniStatus").textContent = statusText;
+      const playIcon = document.getElementById("miniPlayIcon");
+      const miniWave = document.getElementById("miniWave");
+
+      if (isPlaying) {
+        playIcon.className = "fa-solid fa-pause text-base";
+        miniWave.classList.remove("hidden");
+      } else {
+        playIcon.className = "fa-solid fa-play ml-0.5 text-base";
+        miniWave.classList.add("hidden");
+      }
+
+      // Full Modal
+      document.getElementById("modalStationTitle").textContent = st.name;
+      document.getElementById("modalStationFreq").textContent = `${st.freq || '网络电台'} • 线路 ${currentRouteIndex + 1}/${st.routes.length}`;
+      document.getElementById("modalStationGroup").textContent = st.category;
+      document.getElementById("modalStreamStatus").textContent = statusText;
+      document.getElementById("routeInfo").textContent = `线路 ${currentRouteIndex + 1} (${st.routes[currentRouteIndex].includes('.m3u8') ? 'HLS 高清' : '直连音轨'})`;
+
+      const vinylDisc = document.getElementById("vinylDisc");
+      const modalPlayIcon = document.getElementById("modalPlayIcon");
+      if (isPlaying && !isLoading) {
+        vinylDisc.classList.remove("spin-paused");
+        modalPlayIcon.className = "fa-solid fa-pause";
+      } else {
+        vinylDisc.classList.add("spin-paused");
+        modalPlayIcon.className = "fa-solid fa-play ml-0.5";
+      }
+
+      updateModalFavIcon();
+    }
+
+    function updateModalFavIcon() {
+      const st = getActiveStation();
+      const favBtn = document.getElementById("modalFavBtn");
+      if (st && favorites.includes(st.id)) {
+        favBtn.innerHTML = '<i class="fa-solid fa-heart text-rose-500"></i>';
+      } else {
+        favBtn.innerHTML = '<i class="fa-regular fa-heart"></i>';
+      }
+    }
+
+    /**
+     * 3. iOS MediaSession 协议支持 (锁屏/灵动岛海报控制)
+     */
+    function setupMediaSession() {
+      if (!('mediaSession' in navigator)) return;
+
+      navigator.mediaSession.setActionHandler('play', () => togglePlay());
+      navigator.mediaSession.setActionHandler('pause', () => togglePlay());
+      navigator.mediaSession.setActionHandler('previoustrack', () => prevStation());
+      navigator.mediaSession.setActionHandler('nexttrack', () => nextStation());
+      navigator.mediaSession.setActionHandler('stop', () => {
+        audio.pause();
+        isPlaying = false;
+        updatePlayerUI("已停止", false);
+      });
+    }
+
+    function updateMediaSession() {
+      if (!('mediaSession' in navigator)) return;
+      const st = getActiveStation();
+      if (!st) return;
+
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: st.name,
+        artist: `FM365 收音机 • ${st.freq || '高清广播'}`,
+        album: `${st.category} 实时流`,
+        artwork: [
+          { src: 'https://cdn-icons-png.flxml.com/512/3075/3075908.png', sizes: '512x512', type: 'image/png' }
+        ]
+      });
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    }
+
+    /**
+     * 原生事件与自愈监听
+     */
+    function bindAudioEvents() {
+      audio.addEventListener("playing", () => {
+        isPlaying = true;
+        updatePlayerUI("正在直播中", false);
+        updateMediaSession();
+      });
+
+      audio.addEventListener("pause", () => {
+        if (!audio.seeking) {
+          isPlaying = false;
+          updatePlayerUI("已暂停", false);
+          updateMediaSession();
+        }
+      });
+
+      audio.addEventListener("waiting", () => {
+        updatePlayerUI("信号加载中...", true);
+      });
+
+      audio.addEventListener("stalled", () => {
+        console.warn("[Audio] 网络连接停滞...");
+        updatePlayerUI("网络波动缓冲中...", true);
+      });
+
+      audio.addEventListener("error", (e) => {
+        console.error("[Audio Native Error]", e);
+        handlePlaybackError();
+      });
+    }
+
+    function handlePlaybackError() {
+      handleFallbackRoute();
+    }
+
+    /**
+     * DOM 交互绑定
+     */
+    function bindDomEvents() {
+      // 迷你条点击
+      document.getElementById("miniPlayerInfo").onclick = () => {
+        openFullModal();
+      };
+      document.getElementById("miniPlayBtn").onclick = (e) => {
+        e.stopPropagation();
+        togglePlay();
+      };
+      document.getElementById("miniPrevBtn").onclick = (e) => {
+        e.stopPropagation();
+        prevStation();
+      };
+      document.getElementById("miniNextBtn").onclick = (e) => {
+        e.stopPropagation();
+        nextStation();
+      };
+
+      // 模态弹窗控制
+      const modal = document.getElementById("fullPlayerModal");
+      document.getElementById("closeFullModalBtn").onclick = () => {
+        modal.classList.add("translate-y-full");
+      };
+      document.getElementById("modalPlayBtn").onclick = togglePlay;
+      document.getElementById("modalPrevBtn").onclick = prevStation;
+      document.getElementById("modalNextBtn").onclick = nextStation;
+      document.getElementById("modalFavBtn").onclick = () => {
+        const st = getActiveStation();
+        if (st) toggleFavorite(st.id);
+      };
+
+      // 线路切换
+      document.getElementById("switchRouteBtn").onclick = () => {
+        const st = getActiveStation();
+        if (!st) return;
+        currentRouteIndex = (currentRouteIndex + 1) % st.routes.length;
+        playStation(currentStationIndex, currentRouteIndex);
+      };
+
+      // 提取/复制源
+      document.getElementById("copyStreamModalBtn").onclick = () => {
+        const st = getActiveStation();
+        if (!st) return;
+        const currentUrl = st.routes[currentRouteIndex];
+        navigator.clipboard.writeText(currentUrl).then(() => {
+          showToast("直播流链接已复制到剪贴板！");
+        }).catch(() => {
+          showToast("复制失败，请手动长按复制");
+        });
+      };
+
+      // 导出 M3U
+      document.getElementById("exportM3uBtn").onclick = exportM3U;
+
+      // 添加自定义电台
+      const addModal = document.getElementById("addStationModal");
+      document.getElementById("addStationBtn").onclick = () => {
+        addModal.classList.remove("hidden");
+      };
+      document.getElementById("closeAddModalBtn").onclick = () => {
+        addModal.classList.add("hidden");
+      };
+      document.getElementById("cancelAddBtn").onclick = () => {
+        addModal.classList.add("hidden");
+      };
+      document.getElementById("confirmAddBtn").onclick = handleAddCustomStation;
+    }
+
+    function openFullModal() {
+      document.getElementById("fullPlayerModal").classList.remove("translate-y-full");
+    }
+
+    function handleAddCustomStation() {
+      const name = document.getElementById("inputStationName").value.trim();
+      const url = document.getElementById("inputStationUrl").value.trim();
+      const tag = document.getElementById("inputStationTag").value.trim() || "自定义";
+
+      if (!name || !url) {
+        showToast("请填写完整的电台名称与链接");
+        return;
+      }
+
+      const newStation = {
+        id: "custom-" + Date.now(),
+        name: name,
+        category: tag,
+        freq: "自定义源",
+        icon: "fa-rss",
+        isCustom: true,
+        routes: [url]
+      };
+
+      const customStations = JSON.parse(localStorage.getItem("fm365_custom") || "[]");
+      customStations.unshift(newStation);
+      localStorage.setItem("fm365_custom", JSON.stringify(customStations));
+
+      loadStations();
+      renderStationList();
+      document.getElementById("addStationModal").classList.add("hidden");
+      document.getElementById("inputStationName").value = "";
+      document.getElementById("inputStationUrl").value = "";
+      showToast("新电台添加成功！");
+    }
+
+    function exportM3U() {
+      let m3u = "#EXTM3U
+";
+      stations.forEach(st => {
+        m3u += `#EXTINF:-1 group-title="${st.category}", ${st.name}
+${st.routes[0]}
+`;
+      });
+
+      const blob = new Blob([m3u], { type: "audio/x-mpegurl" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "FM365_Radio_List.m3u";
+      a.click();
+      showToast("已生成并下载 M3U 播放列表");
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById("toast");
+      toast.textContent = text;
+      toast.classList.remove("opacity-0");
+      setTimeout(() => {
+        toast.classList.add("opacity-0");
+      }, 2500);
+    }
+
+    // 页面加载启动
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
